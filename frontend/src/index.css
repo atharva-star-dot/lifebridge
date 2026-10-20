@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Ensure min 48px touch targets for mobile accessibility */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

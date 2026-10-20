@@ -1,0 +1,145 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LifeBridge API",
+    "version": "1.0.0",
+    "description": "API for converting messy real-world multimodal inputs into structured, verified, life-saving actions."
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "API status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "gemini_configured": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyze": {
+      "post": {
+        "summary": "Analyze unstructured multimodal input",
+        "description": "Accepts text, image, audio, or PDF file, evaluates urgency, extracts entities, grounds facts, and returns prioritized action cards.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": { "type": "string", "description": "Unstructured text or transcribed speech" },
+                  "language": { "type": "string", "enum": ["en", "hi", "mr"], "default": "en" },
+                  "file": { "type": "string", "format": "binary", "description": "Optional image (JPG/PNG), audio (MP3/WAV/WEBM), or PDF document" },
+                  "user_latitude": { "type": "number", "format": "float" },
+                  "user_longitude": { "type": "number", "format": "float" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Structured life-saving actions analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifeBridgeAnalysis"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload or empty input"
+          },
+          "500": {
+            "description": "Server or model inference error"
+          }
+        }
+      }
+    },
+    "/api/demos": {
+      "get": {
+        "summary": "Get preloaded demo scenarios",
+        "responses": {
+          "200": {
+            "description": "List of available preloaded demo scenarios and their pre-computed responses"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SeverityLevel": {
+        "type": "string",
+        "enum": ["Critical", "Urgent", "Routine"]
+      },
+      "VerificationStatus": {
+        "type": "string",
+        "enum": ["verified", "unverified", "conflicting"]
+      },
+      "ExtractedEntities": {
+        "type": "object",
+        "properties": {
+          "people": { "type": "array", "items": { "type": "string" } },
+          "medications": { "type": "array", "items": { "type": "string" } },
+          "symptoms": { "type": "array", "items": { "type": "string" } },
+          "locations": { "type": "array", "items": { "type": "string" } },
+          "times": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ActionItem": {
+        "type": "object",
+        "required": ["id", "action", "reason", "deadline"],
+        "properties": {
+          "id": { "type": "string" },
+          "action": { "type": "string" },
+          "reason": { "type": "string" },
+          "deadline": { "type": "string" },
+          "call_number": { "type": "string", "nullable": true },
+          "map_query": { "type": "string", "nullable": true },
+          "is_high_risk": { "type": "boolean", "default": false }
+        }
+      },
+      "VerificationItem": {
+        "type": "object",
+        "required": ["claim", "status"],
+        "properties": {
+          "claim": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/VerificationStatus" },
+          "source_title": { "type": "string", "nullable": true },
+          "source_url": { "type": "string", "nullable": true },
+          "notes": { "type": "string", "nullable": true }
+        }
+      },
+      "LifeBridgeAnalysis": {
+        "type": "object",
+        "required": ["intent", "severity", "urgency", "actions", "verification", "confidence_score"],
+        "properties": {
+          "intent": { "type": "string" },
+          "severity": { "$ref": "#/components/schemas/SeverityLevel" },
+          "urgency": { "type": "string" },
+          "extracted_entities": { "$ref": "#/components/schemas/ExtractedEntities" },
+          "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ActionItem" } },
+          "verification": { "type": "array", "items": { "$ref": "#/components/schemas/VerificationItem" } },
+          "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "needs_human_confirmation": { "type": "boolean" },
+          "clarifying_questions": { "type": "array", "items": { "type": "string" } },
+          "language": { "type": "string", "example": "en" },
+          "disclaimer": { "type": "string" }
+        }
+      }
+    }
+  }
+}
